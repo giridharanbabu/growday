@@ -44,7 +44,7 @@ async def create_business(business: Business, token: str = Depends(val_token)):
                         '$push': {'User_ids': find_user['_id']}
                         },upsert=True)
                     if update_business_users:
-                        return {"Business": f"Created Business {details['name']}{update_user}"}
+                        return {"Business": f"Created Business {details['name']}"}
                 else:
                     raise HTTPException(status_code=400, detail="Failed to update data")
             else:
