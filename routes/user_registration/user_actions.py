@@ -1,13 +1,15 @@
 import base64
 import hashlib
+import json
 from datetime import datetime, timedelta
 from random import randbytes
 from typing import Annotated, Union
 
+from bson import json_util
 from fastapi import HTTPException, status, APIRouter, Request, Cookie, Depends, Response
 from jose import jwt
 
-from routes.user_registration.user_models import CreateUserSchema, LoginUserSchema, PasswordResetRequest
+from routes.user_registration.user_models import CreateUserSchema, LoginUserSchema, PasswordResetRequest, UserReponse
 from database.database import database
 from routes.authentication import val_token
 from routes.user_registration import user_utils
@@ -167,7 +169,8 @@ async def reset_password(new_password, token: str = Depends(val_token)):
             # Update the user data in MongoDB
             new_password = user_utils.hash_password(new_password)
             print(new_password)
-            result = user_collection.update_one({"_id": user["_id"]}, {"$set": {"password": new_password, "updated_at": datetime.utcnow()}})
+            result = user_collection.update_one({"_id": user["_id"]},
+                                                {"$set": {"password": new_password, "updated_at": datetime.utcnow()}})
             if result:
                 return {"message": "Password reset successfully"}
             else:
@@ -175,5 +178,25 @@ async def reset_password(new_password, token: str = Depends(val_token)):
 
         else:
             raise HTTPException(status_code=404, detail="User not found")
+    else:
+        raise HTTPException(status_code=401, detail=token)
+
+
+@user_router.get("/user/info", response_model=UserReponse)
+async def update_user(token: str = Depends(val_token)):
+    if token[0] is True:
+        payload = token[1]
+        user = user_collection.find_one({'email': payload["email"]})
+        if user:
+            members_count = len(user['members'])
+            business_count = len(user['business'])
+            user['members_count'] = members_count
+            user['business_count'] = business_count
+            user['created_at'] = str(user['created_at'])
+            return json.loads(json_util.dumps(user))
+        # Check if the user is found and updated
+        else:
+            raise HTTPException(status_code=404, detail="User not found")
+
     else:
         raise HTTPException(status_code=401, detail=token)

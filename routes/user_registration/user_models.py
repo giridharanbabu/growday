@@ -30,3 +30,15 @@ class LoginUserSchema(BaseModel):
 
 class PasswordResetRequest(BaseModel):
     email: EmailStr
+
+
+class UserReponse(BaseModel):
+    name: str
+    email: str
+    organization_name: Optional[str] = None
+    organization_type: Optional[str] = None
+    description: Optional[str] = None
+    role: str or None = None
+    members_count: int
+    business_count: int
+    created_at: datetime

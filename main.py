@@ -6,16 +6,15 @@ from fastapi import Depends, FastAPI
 from bson import json_util
 import json
 from routes.authentication import val_token
-from routes.user_registration.user_models import *
 from routes import authentication
 from routes.user_registration import user_actions
 from routes.customer import customer
 from routes.business import business_register
 from routes.members import members
 from routes.emails import *
-print("---")
+
 from database.database import database
-print("++++")
+
 # auth
 from fastapi.security import (OAuth2PasswordBearer)
 from bson.json_util import dumps, loads
