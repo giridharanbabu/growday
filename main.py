@@ -14,6 +14,7 @@ from routes.members import members
 from routes.emails import *
 
 from database.database import database
+
 # auth
 from fastapi.security import (OAuth2PasswordBearer)
 from bson.json_util import dumps, loads
@@ -67,7 +68,6 @@ def list_customers(collection_name, token: str = Depends(val_token)):
             if find_user:
                 search_criteria = {
                     "User_ids": {
-
                         "$elemMatch": {
                             "$in": [
                                 find_user['_id']
