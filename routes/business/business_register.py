@@ -44,7 +44,7 @@ async def create_business(business: Business, token: str = Depends(val_token)):
                         '$push': {'User_ids': find_user['_id']}
                         },upsert=True)
                     if update_business_users:
-                        return {"Business": f"Created Business {details['name']}"}
+                        return {"Business": f"Created Business {details['name']}{update_user}"}
                 else:
                     raise HTTPException(status_code=400, detail="Failed to update data")
             else:
@@ -81,3 +81,30 @@ async def update_business(edit_business: EditBusiness, token: str = Depends(val_
         raise HTTPException(status_code=401, detail=token)
 
     return {'status': f'Updated Business Successfully- {edit_business["name"]}'}
+
+
+@business_router.post("/disable/business")
+async def disable_business(edit_business: DisableBusiness, token: str = Depends(val_token)):
+    from pymongo import ReturnDocument
+    if token[0] is True:
+        edit_business = edit_business.dict(exclude_none=True)
+        get_user = user_collection.find_one({'email': token[1]['email']})
+        print(get_user)
+        if get_user:
+            edit_business['updated_at'] = datetime.utcnow()
+            print(edit_business)
+            matching_business = [b for b in get_user["business"] if b["business_name"] == edit_business['name']]
+            if matching_business:
+                print("Matching business details:", matching_business)
+                update_user = business_collection.find_one_and_update({'_id': matching_business[0]['business_id']}, {
+                    '$set': edit_business}, upsert=True)
+                print("Matching business details:", update_user)
+                return {'status': f' Business disabled Successfully- {edit_business["name"]}'}
+            else:
+                raise HTTPException(status_code=404, detail=f'Unable to find business - {edit_business["name"]}')
+        else:
+            raise HTTPException(status_code=409, detail=f"business {edit_business['name']} does not Exists")
+
+    else:
+        raise HTTPException(status_code=401, detail=token)
+
