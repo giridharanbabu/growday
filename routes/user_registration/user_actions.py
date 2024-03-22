@@ -187,9 +187,13 @@ async def update_user(token: str = Depends(val_token)):
     if token[0] is True:
         payload = token[1]
         user = user_collection.find_one({'email': payload["email"]})
+        members_count = 0
+        business_count = 0
         if user:
-            members_count = len(user['members'])
-            business_count = len(user['business'])
+            if 'members' in user:
+                members_count = len(user['members'])
+            if 'business' in user:
+                business_count = len(user['business'])
             user['members_count'] = members_count
             user['business_count'] = business_count
             user['created_at'] = str(user['created_at'])

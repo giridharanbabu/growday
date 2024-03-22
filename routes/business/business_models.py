@@ -12,8 +12,8 @@ class Domain(BaseModel):
 
 class Business(BaseModel):
     name: str
-    bussiness_type: str
-    desctription: Optional[str] = None
+    business_type: str
+    description: Optional[str] = None
     created_date: datetime or None = None
     address: str
     domain_url:  Optional[str] = None
@@ -23,9 +23,10 @@ class Business(BaseModel):
 
 class EditBusiness(BaseModel):
     name: str
-    email: str or None = None
-    phone: str or None = None
-    address: str or None = None
-    business_url: Domain or None = None
-    bussiness_type:  Optional[str] = None
-    desctription:  Optional[str] = None
+    business_type: str
+    description: Optional[str] = None
+    created_date: datetime or None = None
+    address: str
+    domain_url:  Optional[str] = None
+    business_url:  Optional[str] = None
+    created_by: str or None = None
