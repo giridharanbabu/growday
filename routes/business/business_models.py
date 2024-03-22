@@ -19,7 +19,7 @@ class Business(BaseModel):
     domain_url: Optional[str] = None
     business_url: Optional[str] = None
     created_by: str or None = None
-    business_status: bool
+    status: bool
 
 
 class EditBusiness(BaseModel):

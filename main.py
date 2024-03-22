@@ -65,32 +65,16 @@ def list_customers(collection_name, token: str = Depends(val_token)):
             user_collection = database.get_collection('users')
             find_user = user_collection.find_one({'email': token[1]['email']})
             if find_user:
-                if collection_name == 'business':
-                    search_criteria = {
-                                      "$and": [
-                                        {
-                                          "User_ids": {
-                                            "$elemMatch": {
-                                              "$in": [find_user['_id']]
-                                            }
-                                          }
-                                        },
-                                        {
-                                          "status": True
-                                        }
-                                      ]
-                                    }
-                else:
-                    search_criteria = {
-                        "User_ids": {
-                            "$elemMatch": {
-                                "$in": [
-                                    find_user['_id']
-                                ]
-                            }
-
+                search_criteria = {
+                    "User_ids": {
+                        "$elemMatch": {
+                            "$in": [
+                                find_user['_id']
+                            ]
                         }
+
                     }
+                }
                 # Find documents matching the search criteria
                 cursor = list_collections.find(search_criteria)
                 documents_list = list(cursor)
