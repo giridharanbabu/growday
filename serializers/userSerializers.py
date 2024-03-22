@@ -35,3 +35,12 @@ def embeddedUserResponse(user) -> dict:
 
 def userListEntity(users) -> list:
     return [userEntity(user) for user in users]
+
+def customerEntity(user) -> dict:
+    return {
+        "id": str(user["_id"]),
+        "name": user["name"],
+        "email": user["email"],
+        "password": user["password"],
+        "created_at": user["created_at"]
+    }
