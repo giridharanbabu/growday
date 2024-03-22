@@ -8,7 +8,6 @@ from bson.objectid import ObjectId
 class Customer(BaseModel):
     name: str
     email: str
-    password: str
     phone: str
     business_ids: list[str]
     created_at: datetime
@@ -20,3 +19,6 @@ class EditCustomer(BaseModel):
     phone: str or None = None
 
 
+class LoginCustomerSchema(BaseModel):
+    email: EmailStr
+    password: constr(min_length=8)
