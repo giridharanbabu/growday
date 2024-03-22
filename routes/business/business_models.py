@@ -6,8 +6,8 @@ from bson.objectid import ObjectId
 
 
 class Domain(BaseModel):
-    subdomain_url:  Optional[str] = None
-    custom_domain:  Optional[str] = None
+    subdomain_url: Optional[str] = None
+    custom_domain: Optional[str] = None
 
 
 class Business(BaseModel):
@@ -16,9 +16,10 @@ class Business(BaseModel):
     description: Optional[str] = None
     created_date: datetime or None = None
     address: str
-    domain_url:  Optional[str] = None
-    business_url:  Optional[str] = None
+    domain_url: Optional[str] = None
+    business_url: Optional[str] = None
     created_by: str or None = None
+    business_status: bool
 
 
 class EditBusiness(BaseModel):
@@ -27,6 +28,12 @@ class EditBusiness(BaseModel):
     description: Optional[str] = None
     created_date: datetime or None = None
     address: str
-    domain_url:  Optional[str] = None
-    business_url:  Optional[str] = None
+    domain_url: Optional[str] = None
+    business_url: Optional[str] = None
     created_by: str or None = None
+
+
+class DisableBusiness(BaseModel):
+    name: str
+    updated_by: str or None
+    status: bool
