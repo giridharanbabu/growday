@@ -1,9 +1,11 @@
 import hashlib
 from random import randbytes
 
+import bson
 from fastapi import HTTPException, status, APIRouter, Request, Cookie, Depends, Response
 
 from config.config import settings
+from routes.business.business_register import business_collection
 from routes.customer.customer_models import *
 from database.database import database
 from database.database import database
@@ -18,31 +20,45 @@ customers_collection = database.get_collection('customers')
 user_collection = database.get_collection('users')
 
 
-@customer_router.post("/customer/register")
-async def create_customer(customer: Customer, token: str = Depends(val_token)):
-    if token[0] is True:
-        details = customer.dict()
-        customer_collection = database.get_collection('customers')
-        print(customer_collection)
-        customer = customers_collection.find_one({'email': details["email"]})
-        find_user = user_collection.find_one({'email': token[1]['email']})
-        if not customer:
-            temp_password = generate_temp_password()
-            hashed_temp_password = hash_password(temp_password)
-            details['password'] = hashed_temp_password
-            details['User_ids'] = [find_user['_id']]
-            result = customer_collection.insert_one(details)
-            await Email(temp_password, details['email'], 'customer_register').send_email()
-            if result.inserted_id:
-                return {"status": f"New Customer- {details['name']} added",
-                        'message': 'Temporary password successfully sent to your email'}
-            else:
-                raise HTTPException(status_code=500, detail="Failed to insert data")
+async def customer_register(details):
+    business_details = business_collection.find_one({"_id": ObjectId(str(details['business_ids']))})
+    if business_details:
+        find_user = user_collection.find_one({'_id': business_details['User_ids'][0]})
+        temp_password = generate_temp_password()
+        hashed_temp_password = hash_password(temp_password)
+        details['password'] = hashed_temp_password
+        details['User_ids'] = [find_user['_id']]
+        result = customers_collection.insert_one(details)
+        await Email(temp_password, details['email'], 'customer_register').send_email()
+        if result.inserted_id:
+            return {"status": f"New Customer- {details['name']} added",
+                    'message': 'Temporary password successfully sent to your email'}
         else:
-            raise HTTPException(status_code=409, detail=f"Customer Email- {customer['email']} Exists")
-
+            raise HTTPException(status_code=500, detail="Failed to insert data")
     else:
-        raise HTTPException(status_code=401, detail=token)
+        raise HTTPException(status_code=404, detail=f'Unable to find business - {details["business_ids"]}')
+
+
+@customer_router.post("/customer/register")
+async def create_customer(customer: Customer):
+    details = customer.dict()
+    customer_collection = database.get_collection('customers')
+    print(customer_collection)
+    customer = customers_collection.find_one({'email': details["email"]})
+    try:
+        if customer:
+            check_business = customers_collection.find({
+                '_id': ObjectId(str(customer['_id'])),
+                "business_ids": ObjectId(str(details['business_ids']))
+            })
+            if check_business:
+                raise HTTPException(status_code=409, detail=f"Customer Email- {customer['email']} Exists")
+            else:
+                return await customer_register(details)
+        if not customer:
+            return await customer_register(details)
+    except bson.errors.InvalidId:
+        raise HTTPException(status_code=400, detail="Invalid business ID")
 
 
 @customer_router.post("/edit/customer")
@@ -86,7 +102,7 @@ async def login(payload: LoginCustomerSchema, response: Response):
                             detail='Incorrect Email or Password')
 
     # Create access token
-    access_token = user_utils.create_refresh_token(user['email'], user['name'],'Customer')
+    access_token = user_utils.create_refresh_token(user['email'], user['name'], 'Customer')
 
     # Create refresh token
     refresh_token = user_utils.create_access_token(user['email'], user['name'], 'Customer')
