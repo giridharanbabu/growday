@@ -9,7 +9,7 @@ class Customer(BaseModel):
     name: str
     email: str
     phone: str
-    business_ids: list[str]
+    business_ids: str
     created_at: datetime
 
 

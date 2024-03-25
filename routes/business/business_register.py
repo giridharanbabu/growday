@@ -1,3 +1,4 @@
+from bson import json_util
 from fastapi import HTTPException, status, APIRouter, Request, Cookie, Depends
 from pymongo import ReturnDocument
 import json
@@ -108,3 +109,17 @@ async def disable_business(edit_business: DisableBusiness, token: str = Depends(
     else:
         raise HTTPException(status_code=401, detail=token)
 
+
+@business_router.get("/business/{business_id}")
+async def get_business(business_id, token: str = Depends(val_token)):
+    from pymongo import ReturnDocument
+    if token[0] is True:
+        get_user = user_collection.find_one({'email': token[1]['email']})
+        if get_user:
+            business_details = business_collection.find_one({"_id": ObjectId(str(business_id))})
+            if business_details:
+                return json.loads(json_util.dumps(business_details))
+            else:
+                raise HTTPException(status_code=404, detail=f'Unable to find business - { id }')
+    else:
+        raise HTTPException(status_code=401, detail=token)
