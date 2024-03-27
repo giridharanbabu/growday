@@ -92,7 +92,7 @@ async def edit_member(member: Members, token: str = Depends(val_token)):
         member = members_collection.find_one({'email': details["email"]})
         details['updated_time'] = datetime.utcnow()
         if member:
-            if member['role'] == 'admin':
+            if member['role'] == 'admin' or member['role'] == 'user':
                 result = members_collection.update_one({"_id": member["_id"]}, {"$set": details})
                 print(result)
                 if result:
