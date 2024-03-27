@@ -9,4 +9,5 @@ class Members(BaseModel):
     name: str
     email: str
     role: str
+    business_ids: list[str]
     created_time: datetime
