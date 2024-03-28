@@ -77,7 +77,7 @@ async def update_customer(edit_customer: EditCustomer, token: str = Depends(val_
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                                     detail=f'Unable to Update for this Customer - {result}')
         else:
-            raise HTTPException(status_code=409, detail=f"Customer {customer['phone']} does not Exists")
+            raise HTTPException(status_code=409, detail=f"Customer {customer['email']} does not Exists")
 
     else:
         raise HTTPException(status_code=401, detail=token)
