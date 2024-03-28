@@ -67,7 +67,7 @@ async def update_customer(edit_customer: EditCustomer, token: str = Depends(val_
     if token[0] is True:
         edit_customer = edit_customer.dict(exclude_none=True)
         customer_collection = database.get_collection('customers')
-        customer = customers_collection.find_one({'phone': edit_customer["phone"]})
+        customer = customers_collection.find_one({'email': edit_customer["email"]})
         if customer:
             edit_customer['updated_at'] = datetime.utcnow()
             result = customer_collection.find_one_and_update({'_id': customer['_id']}, {'$set': edit_customer},
@@ -77,7 +77,7 @@ async def update_customer(edit_customer: EditCustomer, token: str = Depends(val_
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                                     detail=f'Unable to Update for this Customer - {result}')
         else:
-            raise HTTPException(status_code=409, detail=f"Customer {customer['phone']} does not Exists")
+            raise HTTPException(status_code=409, detail=f"Customer {customer['email']} does not Exists")
 
     else:
         raise HTTPException(status_code=401, detail=token)
