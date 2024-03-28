@@ -67,7 +67,7 @@ async def update_customer(edit_customer: EditCustomer, token: str = Depends(val_
     if token[0] is True:
         edit_customer = edit_customer.dict(exclude_none=True)
         customer_collection = database.get_collection('customers')
-        customer = customers_collection.find_one({'phone': edit_customer["phone"]})
+        customer = customers_collection.find_one({'email': edit_customer["email"]})
         if customer:
             edit_customer['updated_at'] = datetime.utcnow()
             result = customer_collection.find_one_and_update({'_id': customer['_id']}, {'$set': edit_customer},
