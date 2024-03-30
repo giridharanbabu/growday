@@ -22,3 +22,4 @@ class EditCustomer(BaseModel):
 class LoginCustomerSchema(BaseModel):
     email: EmailStr
     password: constr(min_length=8)
+    business_id: str

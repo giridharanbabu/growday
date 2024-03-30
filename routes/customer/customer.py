@@ -1,7 +1,9 @@
 import hashlib
+import json
 from random import randbytes
 
 import bson
+from bson import json_util
 from fastapi import HTTPException, status, APIRouter, Request, Cookie, Depends, Response
 
 from config.config import settings
@@ -20,21 +22,51 @@ customers_collection = database.get_collection('customers')
 user_collection = database.get_collection('users')
 
 
+@customer_router.post("/customer/cp/register/")
+def existing_customer(details):
+    details= json.loads(details)
+    result = customers_collection.insert_one(details)
+    if result.inserted_id:
+        return {"status": f"New Customer- {details['name']} added",
+                'message': 'Temporary password successfully sent to your email'}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to insert data")
+
+
 async def customer_register(details):
+    print(details)
     business_details = business_collection.find_one({"_id": ObjectId(str(details['business_ids']))})
     if business_details:
-        find_user = user_collection.find_one({'_id': business_details['User_ids'][0]})
-        temp_password = generate_temp_password()
-        hashed_temp_password = hash_password(temp_password)
-        details['password'] = hashed_temp_password
-        details['User_ids'] = [find_user['_id']]
-        result = customers_collection.insert_one(details)
-        await Email(temp_password, details['email'], 'customer_register').send_email()
-        if result.inserted_id:
-            return {"status": f"New Customer- {details['name']} added",
-                    'message': 'Temporary password successfully sent to your email'}
+        find_user = user_collection.find_one({'_id': ObjectId(str(business_details['User_ids'][0]))})
+        get_existing_email = customers_collection.find({
+            "email": details['email'],
+            "User_ids": {
+                "$elemMatch": {
+                    "$in": [
+                        ObjectId(str(find_user['_id']))
+                    ]
+                }
+            }
+        })
+        get_existing_email = list(get_existing_email)
+        if get_existing_email:
+            get_existing_email[0]['business_ids'] = str(details['business_ids'])
+            get_existing_email[0].pop('_id',None)
+
+            return {"customer_details":  json.loads(json_util.dumps(get_existing_email)),
+                    'message': "Customer already registered with different business you want to use same credentials"}
         else:
-            raise HTTPException(status_code=500, detail="Failed to insert data")
+            temp_password = generate_temp_password()
+            hashed_temp_password = hash_password(temp_password)
+            details['password'] = hashed_temp_password
+            details['User_ids'] = [find_user['_id']]
+            result = customers_collection.insert_one(details)
+            await Email(temp_password, details['email'], 'customer_register').send_email()
+            if result.inserted_id:
+                return {"status": f"New Customer- {details['name']} added",
+                        'message': 'Temporary password successfully sent to your email'}
+            else:
+                raise HTTPException(status_code=500, detail="Failed to insert data")
     else:
         raise HTTPException(status_code=404, detail=f'Unable to find business - {details["business_ids"]}')
 
@@ -47,12 +79,21 @@ async def create_customer(customer: Customer):
     customer = customers_collection.find_one({'email': details["email"]})
     try:
         if customer:
+            print({
+                '_id': ObjectId(str(customer['_id'])),
+                "business_ids": ObjectId(str(details['business_ids']))
+                # "business_ids": {"$elemMatch": {
+                #     "$in": [str(details['business_ids']]}}
+            })
             check_business = customers_collection.find({
                 '_id': ObjectId(str(customer['_id'])),
                 "business_ids": ObjectId(str(details['business_ids']))
+                # "business_ids": {"$elemMatch": {
+                #     "$in": [str(details['business_ids']]}}
             })
-            if check_business:
-                raise HTTPException(status_code=409, detail=f"Customer Email- {customer['email']} Exists")
+
+            if list(check_business):
+                raise HTTPException(status_code=409, detail=f"Customer Email- {list(check_business)}{customer['email']} Exists")
             else:
                 return await customer_register(details)
         if not customer:
@@ -88,10 +129,10 @@ async def update_customer(edit_customer: EditCustomer, token: str = Depends(val_
 @customer_router.post('/customer/login')
 async def login(payload: LoginCustomerSchema, response: Response):
     # Check if the user exist
-    db_user = customers_collection.find_one({'email': payload.email.lower()})
+    db_user = customers_collection.find_one({'email': payload.email.lower(), 'business_ids': payload.business_id})
     if not db_user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                            detail='Incorrect Email or Password')
+                            detail='User does not Registered')
     user = customerEntity(db_user)
     ACCESS_TOKEN_EXPIRES_IN = settings.ACCESS_TOKEN_EXPIRE_MINUTES
     REFRESH_TOKEN_EXPIRES_IN = settings.ACCESS_TOKEN_EXPIRE_MINUTES
@@ -116,4 +157,4 @@ async def login(payload: LoginCustomerSchema, response: Response):
                         ACCESS_TOKEN_EXPIRES_IN * 60, '/', None, False, False, 'lax')
 
     # Send both access
-    return {'status': 'success', 'access_token': access_token}
+    return {'status': 'success', 'user': user['name'], 'access_token': access_token}
