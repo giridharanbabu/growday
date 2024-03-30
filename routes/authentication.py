@@ -7,6 +7,7 @@ from config.config import settings
 from fastapi import HTTPException, status, Header, APIRouter, Depends
 from fastapi.security import (OAuth2PasswordRequestForm)
 from database.database import database
+from routes.user_registration import user_utils
 
 auth_router = APIRouter()
 # password_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
@@ -139,11 +140,12 @@ async def verify_me(token: str):
 
     result = register.find_one_and_update({"verification_code": token}, {
         "$set": {"verification_code": None, "verified": True, "updated_at": datetime.utcnow()}}, new=True)
-    print(result)
+    access_token = user_utils.create_access_token(result['email'], result['name'], result['role'])
     if not result:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail='Invalid verification code or account already verified')
     return {
         "status": "success",
+        "access_token": access_token,
         "message": "Account verified successfully"
     }
