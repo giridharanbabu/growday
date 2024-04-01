@@ -85,6 +85,35 @@ def list_customers(collection_name, token: str = Depends(val_token)):
         raise HTTPException(status_code=401, detail=token)
 
 
+@app.get("/info/count")
+def count_info( token: str = Depends(val_token)):
+    if token[0] is True:
+        business = database.get_collection('business')
+        customers = database.get_collection('customers')
+        members = database.get_collection('members')
+        # Retrieve all documents from the collection
+        user_collection = database.get_collection('users')
+        find_user = user_collection.find_one({'email': token[1]['email']})
+        if find_user:
+            search_criteria = {
+                "User_ids": {
+                    "$elemMatch": {
+                        "$in": [
+                            find_user['_id']
+                        ]
+                    }
+
+                }
+            }
+            # Find documents matching the search criteria
+            business_cursor = business.find(search_criteria)
+            customers_cursor = customers.find(search_criteria)
+            members_cursor = members.find(search_criteria)
+            dashboard_info = {'Business': len(list(business_cursor)), 'Members': len(list(members_cursor)), 'Customers': len(list(customers_cursor))}
+            return dashboard_info
+    else:
+        raise HTTPException(status_code=401, detail=token)
+
 @app.get("/health")
 def index():
     return {"Message": "Service is Up"}
